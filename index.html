@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>기술 동료평가</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      min-height: 100vh;
+      background-color: #ffffff;
+      color: #111111;
+      padding: 60px 24px;
+      position: relative;
+      overflow-x: hidden;
+      user-select: none;
+    }
+
+    .header-title {
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+      color: #666666;
+    }
+
+    /* 화면 중앙 대형 차시 영역 */
+    .session-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+    }
+
+    /* 중앙 차시 텍스트 그라데이션 */
+    .session-text {
+      font-size: 80px;
+      font-weight: 900;
+      letter-spacing: -2px;
+
+      background: linear-gradient(
+        90deg, 
+        #111111 0%, 
+        #111111 35%, 
+        #ffffff 50%, 
+        #111111 65%, 
+        #111111 100%
+      );
+      background-size: 200% auto;
+      color: transparent;
+      -webkit-background-clip: text;
+      background-clip: text;
+      animation: shine 2.5s linear infinite;
+    }
+
+    /* 버튼 기본 스타일 */
+    .btn-common {
+      position: relative;
+      width: 100%;
+      max-width: 320px;
+      padding: 18px 0;
+      font-size: 17px;
+      font-weight: 700;
+      color: #ffffff;
+      background-color: #2563eb;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+      outline: none;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+
+      /* 손 뗄 때 축소된 크기가 부드럽게 복구 */
+      transition: transform 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+
+    /* 누르고 있는 동안 축소 효과 */
+    .btn-common.pressed {
+      transform: scale(0.90) !important;
+      transition: transform 0.08s ease-out !important;
+    }
+
+    /* 누른 지점부터 퍼지는 어두운 원 */
+    .ripple-overlay {
+      position: absolute;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 50%;
+      transform: scale(0);
+      pointer-events: none;
+      transition: transform 0.1s ease-out, opacity 0.4s ease-out;
+      opacity: 1;
+    }
+
+    .ripple-overlay.fade-out {
+      opacity: 0;
+    }
+
+    /* --- 모달 관련 스타일 --- */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(0, 0, 0, 0.4);
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+      z-index: 1000;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-content {
+      width: calc(100% - 32px);
+      max-width: 380px;
+      margin-bottom: 20px;
+      background-color: #ffffff;
+      border-radius: 28px;
+      padding: 12px 24px 28px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+      border: 1px solid #eaeaea;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      
+      transform: translateY(100%);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .modal-overlay.active .modal-content {
+      transform: translateY(0);
+    }
+
+    /* --- 모달 내 요소 순차적 위로 올라옴 (Stagger Animation) --- */
+    .stagger-item {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* 모달 활성화 시 시간차 등장 */
+    .modal-overlay.active .stagger-item:nth-child(1) {
+      opacity: 1;
+      transform: translateY(0);
+      transition-delay: 0.08s;
+    }
+    .modal-overlay.active .stagger-item:nth-child(2) {
+      opacity: 1;
+      transform: translateY(0);
+      transition-delay: 0.16s;
+    }
+    .modal-overlay.active .stagger-item:nth-child(3) {
+      opacity: 1;
+      transform: translateY(0);
+      transition-delay: 0.24s;
+    }
+    .modal-overlay.active .stagger-item:nth-child(4) {
+      opacity: 1;
+      transform: translateY(0);
+      transition-delay: 0.32s;
+    }
+
+    .modal-handle-bar {
+      width: 36px;
+      height: 5px;
+      background-color: #e2e8f0;
+      border-radius: 100px;
+      margin-top: 4px;
+      margin-bottom: 20px;
+    }
+
+    .modal-session-text {
+      font-size: 42px;
+      font-weight: 800;
+      margin-bottom: 20px;
+      letter-spacing: -1px;
+
+      background: linear-gradient(
+        90deg, 
+        #111111 0%, 
+        #111111 35%, 
+        #ffffff 50%, 
+        #111111 65%, 
+        #111111 100%
+      );
+      background-size: 200% auto;
+      color: transparent;
+      -webkit-background-clip: text;
+      background-clip: text;
+      animation: shine 2.5s linear infinite;
+    }
+
+    @keyframes shine {
+      0% { background-position: 200% center; }
+      100% { background-position: -200% center; }
+    }
+
+    .notice-text {
+      color: #e11d48;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.7;
+      margin-bottom: 28px;
+      word-break: keep-all;
+    }
+
+    .eval-btn {
+      max-width: 100%;
+      border-radius: 18px;
+    }
+
+    /* 구글 스타일 양끝 둥근 스피너 */
+    .loading-spinner-wrapper {
+      display: none;
+      width: 24px;
+      height: 24px;
+      animation: rotate 1.4s linear infinite;
+    }
+
+    .loading-spinner-wrapper svg circle {
+      stroke: #2563eb;
+      stroke-dasharray: 80;
+      stroke-dashoffset: 60;
+      stroke-linecap: round;
+      transform-origin: center;
+      animation: dash 1.4s ease-in-out infinite;
+    }
+
+    @keyframes rotate {
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes dash {
+      0% { stroke-dashoffset: 75; }
+      50% { stroke-dashoffset: 20; transform: rotate(135deg); }
+      100% { stroke-dashoffset: 75; transform: rotate(450deg); }
+    }
+
+    .btn-common.is-loading {
+      background-color: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      pointer-events: none;
+      transform: none !important;
+    }
+
+    .btn-common.is-loading .btn-text {
+      display: none;
+    }
+
+    .btn-common.is-loading .loading-spinner-wrapper {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header-title">기술 동료평가</div>
+
+  <div class="session-container">
+    <div class="session-text" id="mainSessionText">- 차시</div>
+  </div>
+
+  <button type="button" class="btn-common" id="openModalBtn">
+    <span class="btn-text">동료평가하기</span>
+  </button>
+
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-content">
+      <!-- 순차적 애니메이션 적용 요소 (.stagger-item) -->
+      <div class="modal-handle-bar stagger-item"></div>
+      <div class="modal-session-text stagger-item" id="modalSessionText">- 차시</div>
+      
+      <div class="notice-text stagger-item">
+        반드시 차시를 정확하게 입력하세요!!!!<br>
+        반드시 친구이름을 정확히 입력하세요!!!!<br>
+        반드시 팀 번호를 정확하게 입력하세요!!!!
+      </div>
+
+      <button type="button" class="btn-common eval-btn stagger-item" id="goFormBtn">
+        <span class="btn-text">평가하기</span>
+        <div class="loading-spinner-wrapper">
+          <svg viewBox="0 0 50 50" width="24" height="24">
+            <circle cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
+          </svg>
+        </div>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    let currentSession = '1';
+
+    // 1. value.txt 읽어오기
+    fetch('value.txt')
+      .then(response => {
+        if (!response.ok) throw new Error('value.txt 로드 실패');
+        return response.text();
+      })
+      .then(data => {
+        const match = data.match(/count\s*=\s*(\d+)/);
+        if (match && match[1]) {
+          currentSession = match[1];
+        }
+        updateSessionUI(currentSession);
+      })
+      .catch(err => {
+        console.error(err);
+        updateSessionUI(currentSession);
+      });
+
+    function updateSessionUI(session) {
+      document.getElementById('mainSessionText').innerText = `${session}차시`;
+      document.getElementById('modalSessionText').innerText = `${session}차시`;
+    }
+
+    // 2. 이탈 영역 감지 포함 터치/클릭 제어
+    function setupButtonTouchEffect(button, onReleaseAction) {
+      let activeOverlay = null;
+      let isPressed = false;
+
+      function press(e) {
+        isPressed = true;
+        button.classList.add('pressed');
+
+        if (activeOverlay) activeOverlay.remove();
+
+        const rect = button.getBoundingClientRect();
+        const circle = document.createElement('span');
+        const diameter = Math.max(rect.width, rect.height) * 2.5;
+        const radius = diameter / 2;
+
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+        const x = clientX - rect.left - radius;
+        const y = clientY - rect.top - radius;
+
+        circle.style.width = circle.style.height = `${diameter}px`;
+        circle.style.left = `${x}px`;
+        circle.style.top = `${y}px`;
+        circle.classList.add('ripple-overlay');
+
+        button.appendChild(circle);
+        activeOverlay = circle;
+
+        requestAnimationFrame(() => {
+          circle.style.transform = 'scale(1)';
+        });
+      }
+
+      function release(e) {
+        if (!isPressed) return;
+        isPressed = false;
+        button.classList.remove('pressed');
+
+        // 손을 뗀 좌표 측정 (버튼 바깥 영역으로 나가서 뗀 경우 취소)
+        let clientX = e.clientX;
+        let clientY = e.clientY;
+
+        if (e.changedTouches && e.changedTouches.length > 0) {
+          clientX = e.changedTouches[0].clientX;
+          clientY = e.changedTouches[0].clientY;
+        }
+
+        const targetElement = document.elementFromPoint(clientX, clientY);
+        const isInsideButton = button.contains(targetElement);
+
+        if (activeOverlay) {
+          const overlayToFade = activeOverlay;
+          activeOverlay = null;
+
+          overlayToFade.classList.add('fade-out');
+          setTimeout(() => {
+            overlayToFade.remove();
+          }, 400);
+        }
+
+        // 버튼 내부에서 정상적으로 손을 뗀 경우에만 액션 실행
+        if (isInsideButton && onReleaseAction) {
+          onReleaseAction();
+        }
+      }
+
+      function cancel() {
+        if (!isPressed) return;
+        isPressed = false;
+        button.classList.remove('pressed');
+
+        if (activeOverlay) {
+          const overlayToFade = activeOverlay;
+          activeOverlay = null;
+          overlayToFade.classList.add('fade-out');
+          setTimeout(() => overlayToFade.remove(), 400);
+        }
+      }
+
+      button.addEventListener('mousedown', press);
+      button.addEventListener('touchstart', press, { passive: true });
+
+      button.addEventListener('mouseup', release);
+      button.addEventListener('touchend', release);
+      button.addEventListener('mouseleave', cancel);
+      button.addEventListener('touchcancel', cancel);
+    }
+
+    const openModalBtn = document.getElementById('openModalBtn');
+    const modalOverlay = document.getElementById('modalOverlay');
+    const goFormBtn = document.getElementById('goFormBtn');
+
+    // 모달 열기 버튼 세팅
+    setupButtonTouchEffect(openModalBtn, () => {
+      setTimeout(() => {
+        modalOverlay.classList.add('active');
+      }, 80);
+    });
+
+    // 모달 차단막 클릭 시 닫기
+    modalOverlay.addEventListener('click', function(e) {
+      if (e.target === modalOverlay) {
+        modalOverlay.classList.remove('active');
+      }
+    });
+
+    // 최종 평가하기 버튼 세팅 (구글폼 이동)
+    setupButtonTouchEffect(goFormBtn, () => {
+      setTimeout(() => {
+        goFormBtn.classList.add('is-loading');
+
+        const baseUrl = "https://docs.google.com/forms/d/e/1FAIpQLSe8mHBFBRI-KRre8SRy9dl1h2NnTe1af9YzGtBiZI2toO1XCw/viewform";
+        const params = new URLSearchParams();
+        params.append('entry.333333333', currentSession); // 사용 구글폼의 차시 entry ID 입력
+
+        setTimeout(() => {
+          window.location.href = `${baseUrl}?${params.toString()}`;
+        }, 400);
+      }, 80);
+    });
+  </script>
+
+</body>
+</html>
