@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>기술 동료평가</title>
   <style>
     * {
@@ -89,6 +89,8 @@
       display: flex;
       justify-content: center;
       align-items: center;
+      touch-action: manipulation;
+      -webkit-touch-callout: none;
 
       /* 손 뗄 때 축소된 크기가 부드럽게 복구 */
       transition: transform 0.25s cubic-bezier(0.25, 1, 0.5, 1);
@@ -100,14 +102,18 @@
       transition: transform 0.08s ease-out !important;
     }
 
-    /* 누른 지점부터 퍼지는 어두운 원 */
+    /* 누른 지점부터 퍼지는 어두운 원 (부드럽게 어두워짐) */
     .ripple-overlay {
       position: absolute;
       background: rgba(0, 0, 0, 0.3);
       border-radius: 50%;
       transform: scale(0);
+      opacity: 0;
       pointer-events: none;
-      transition: transform 0.1s ease-out, opacity 0.4s ease-out;
+      transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.35s ease-out;
+    }
+
+    .ripple-overlay.show {
       opacity: 1;
     }
 
@@ -167,25 +173,19 @@
       transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    /* 모달 활성화 시 시간차 등장 */
-    .modal-overlay.active .stagger-item:nth-child(1) {
+    /* 모달 활성화 시 시간차 등장 (자식 개수에 상관없이 모두 표시) */
+    .modal-overlay.active .stagger-item {
       opacity: 1;
       transform: translateY(0);
       transition-delay: 0.08s;
     }
     .modal-overlay.active .stagger-item:nth-child(2) {
-      opacity: 1;
-      transform: translateY(0);
       transition-delay: 0.16s;
     }
     .modal-overlay.active .stagger-item:nth-child(3) {
-      opacity: 1;
-      transform: translateY(0);
       transition-delay: 0.24s;
     }
     .modal-overlay.active .stagger-item:nth-child(4) {
-      opacity: 1;
-      transform: translateY(0);
       transition-delay: 0.32s;
     }
 
@@ -196,6 +196,8 @@
       border-radius: 100px;
       margin-top: 4px;
       margin-bottom: 20px;
+      cursor: grab;
+      touch-action: none;
     }
 
     .modal-session-text {
@@ -280,6 +282,159 @@
     .btn-common.is-loading .loading-spinner-wrapper {
       display: block;
     }
+
+    /* --- 하단 버튼 묶음 --- */
+    .bottom-btn-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      max-width: 320px;
+    }
+
+    /* 조 구성 확인하기 (작은 밝은 회색 버튼) */
+    .btn-secondary {
+      width: auto;
+      max-width: 100%;
+      padding: 10px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #666666;
+      background-color: #f2f2f2;
+    }
+
+    /* 조 구성 확인 모달은 좀 더 여유있게 높이 확보 */
+    #groupModalOverlay .modal-content {
+      min-height: 46vh;
+    }
+
+    /* 조 구성 확인 입력창 (플로팅 라벨) */
+    .input-wrap {
+      position: relative;
+      width: 100%;
+      margin-bottom: 22px;
+    }
+
+    .group-input {
+      width: 100%;
+      border: none;
+      border-bottom: 2px solid #e2e8f0;
+      background: transparent;
+      text-align: left;
+      font-size: 18px;
+      font-weight: 600;
+      color: #111111;
+      padding: 22px 2px 8px;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    .group-input:focus {
+      border-bottom-color: #2563eb;
+    }
+
+    .input-label {
+      position: absolute;
+      left: 2px;
+      top: 22px;
+      font-size: 16px;
+      font-weight: 500;
+      color: #999999;
+      pointer-events: none;
+      transition: all 0.2s ease;
+    }
+
+    .group-input:focus + .input-label,
+    .group-input:not(:placeholder-shown) + .input-label {
+      top: 0;
+      font-size: 12px;
+      font-weight: 700;
+      color: #2563eb;
+    }
+
+    /* 조회 결과 영역 (부드러운 확장/축소) */
+    .group-result {
+      width: 100%;
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      padding: 0 16px;
+      margin-bottom: 0;
+      background-color: #f7f8fa;
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: max-height 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+                  opacity 0.3s ease,
+                  padding 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+                  margin-bottom 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .group-result.show {
+      max-height: 600px;
+      opacity: 1;
+      padding: 18px 16px;
+      margin-bottom: 20px;
+    }
+
+    .group-result-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 15px;
+    }
+
+    .group-result-label {
+      color: #888888;
+      font-weight: 600;
+    }
+
+    .group-result-value {
+      color: #111111;
+      font-weight: 700;
+    }
+
+    .group-result-empty {
+      color: #e11d48;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .group-result-members {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+      text-align: left;
+      padding-top: 4px;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .group-result-members .group-result-value {
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.6;
+      text-align: left;
+    }
+
+    /* 조장 표시 (별 대신 그라데이션 애니메이션) */
+    .member-leader {
+      font-weight: 800;
+      background: linear-gradient(
+        90deg,
+        #111111 0%,
+        #111111 35%,
+        #ffffff 50%,
+        #111111 65%,
+        #111111 100%
+      );
+      background-size: 200% auto;
+      color: transparent;
+      -webkit-background-clip: text;
+      background-clip: text;
+      animation: shine 2.5s linear infinite;
+    }
   </style>
 </head>
 <body>
@@ -290,9 +445,46 @@
     <div class="session-text" id="mainSessionText">- 차시</div>
   </div>
 
-  <button type="button" class="btn-common" id="openModalBtn">
-    <span class="btn-text">동료평가하기</span>
-  </button>
+  <div class="bottom-btn-group">
+    <button type="button" class="btn-common btn-secondary" id="openGroupModalBtn">
+      <span class="btn-text">조 구성 확인하기</span>
+    </button>
+
+    <button type="button" class="btn-common" id="openModalBtn">
+      <span class="btn-text">동료평가하기</span>
+    </button>
+  </div>
+
+  <!-- 조 구성 확인 모달 -->
+  <div class="modal-overlay" id="groupModalOverlay">
+    <div class="modal-content">
+      <div class="modal-handle-bar stagger-item"></div>
+      <div class="modal-session-text stagger-item" style="font-size:28px;">조 구성 확인</div>
+
+      <div class="input-wrap stagger-item">
+        <input
+          type="text"
+          id="groupSearchInput"
+          class="group-input"
+          placeholder=" "
+          autocomplete="off"
+          inputmode="text"
+        />
+        <label for="groupSearchInput" class="input-label">번호 또는 이름을 입력하세요</label>
+      </div>
+
+      <div class="group-result stagger-item" id="groupResult"></div>
+
+      <button type="button" class="btn-common eval-btn stagger-item" id="groupSearchBtn">
+        <span class="btn-text">확인하기</span>
+        <div class="loading-spinner-wrapper">
+          <svg viewBox="0 0 50 50" width="24" height="24">
+            <circle cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
+          </svg>
+        </div>
+      </button>
+    </div>
+  </div>
 
   <div class="modal-overlay" id="modalOverlay">
     <div class="modal-content">
@@ -344,24 +536,19 @@
       document.getElementById('modalSessionText').innerText = `${session}차시`;
     }
 
-    // 2. 이탈 영역 감지 포함 터치/클릭 제어
+    // 2. 눌림 효과(리플)와 실제 동작을 분리. Pointer Events로 마우스/터치를 하나의 경로로
+    //    통일해서(빠르게 연타하거나 꾹 눌렀다 떼도) 항상 동일하게 반응하도록 함.
+    //    실제 동작은 일반 <button>과 똑같이 click 이벤트에만 연결.
     function setupButtonTouchEffect(button, onReleaseAction) {
       let activeOverlay = null;
-      let isPressed = false;
 
-      function press(e) {
-        isPressed = true;
-        button.classList.add('pressed');
-
+      function spawnRipple(clientX, clientY) {
         if (activeOverlay) activeOverlay.remove();
 
         const rect = button.getBoundingClientRect();
         const circle = document.createElement('span');
         const diameter = Math.max(rect.width, rect.height) * 2.5;
         const radius = diameter / 2;
-
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
         const x = clientX - rect.left - radius;
         const y = clientY - rect.top - radius;
@@ -376,62 +563,104 @@
 
         requestAnimationFrame(() => {
           circle.style.transform = 'scale(1)';
+          circle.classList.add('show');
         });
       }
 
-      function release(e) {
-        if (!isPressed) return;
-        isPressed = false;
+      function clearRipple() {
         button.classList.remove('pressed');
-
-        // 손을 뗀 좌표 측정 (버튼 바깥 영역으로 나가서 뗀 경우 취소)
-        let clientX = e.clientX;
-        let clientY = e.clientY;
-
-        if (e.changedTouches && e.changedTouches.length > 0) {
-          clientX = e.changedTouches[0].clientX;
-          clientY = e.changedTouches[0].clientY;
-        }
-
-        const targetElement = document.elementFromPoint(clientX, clientY);
-        const isInsideButton = button.contains(targetElement);
-
-        if (activeOverlay) {
-          const overlayToFade = activeOverlay;
-          activeOverlay = null;
-
-          overlayToFade.classList.add('fade-out');
-          setTimeout(() => {
-            overlayToFade.remove();
-          }, 400);
-        }
-
-        // 버튼 내부에서 정상적으로 손을 뗀 경우에만 액션 실행
-        if (isInsideButton && onReleaseAction) {
-          onReleaseAction();
-        }
+        if (!activeOverlay) return;
+        const overlayToFade = activeOverlay;
+        activeOverlay = null;
+        overlayToFade.classList.add('fade-out');
+        setTimeout(() => overlayToFade.remove(), 400);
       }
 
-      function cancel() {
-        if (!isPressed) return;
-        isPressed = false;
-        button.classList.remove('pressed');
+      button.addEventListener('pointerdown', function(e) {
+        button.classList.add('pressed');
+        spawnRipple(e.clientX, e.clientY);
+      });
 
-        if (activeOverlay) {
-          const overlayToFade = activeOverlay;
-          activeOverlay = null;
-          overlayToFade.classList.add('fade-out');
-          setTimeout(() => overlayToFade.remove(), 400);
+      button.addEventListener('pointerup', clearRipple);
+      button.addEventListener('pointercancel', clearRipple);
+      button.addEventListener('pointerleave', clearRipple);
+
+      // 실제 동작 실행: 일반 버튼처럼 click 이벤트 하나에만 연결해 항상 정확히 한 번 반응
+      button.addEventListener('click', function() {
+        if (onReleaseAction) onReleaseAction();
+      });
+    }
+
+    // 3. 모달 상단 바를 잡고 아래로 내리면 닫히고, 좌우로는 아주 살짝만 흔들리는 드래그 제어
+    function setupModalDrag(handleBar, modalOverlay) {
+      const modalContent = modalOverlay.querySelector('.modal-content');
+      const maxSideWobble = 6;
+
+      let dragging = false;
+      let startX = 0;
+      let startY = 0;
+      let dragX = 0;
+      let dragY = 0;
+
+      function getPoint(e) {
+        if (e.touches && e.touches.length) {
+          return { x: e.touches[0].clientX, y: e.touches[0].clientY };
         }
+        return { x: e.clientX, y: e.clientY };
       }
 
-      button.addEventListener('mousedown', press);
-      button.addEventListener('touchstart', press, { passive: true });
+      function onStart(e) {
+        dragging = true;
+        const p = getPoint(e);
+        startX = p.x;
+        startY = p.y;
+        modalContent.style.transition = 'none';
+        handleBar.style.cursor = 'grabbing';
+      }
 
-      button.addEventListener('mouseup', release);
-      button.addEventListener('touchend', release);
-      button.addEventListener('mouseleave', cancel);
-      button.addEventListener('touchcancel', cancel);
+      function onMove(e) {
+        if (!dragging) return;
+        const p = getPoint(e);
+        let dy = p.y - startY;
+        let dx = (p.x - startX) * 0.25;
+
+        // 위로 당기는 건 살짝만 저항감 있게 따라오도록
+        if (dy < 0) dy *= 0.15;
+
+        if (dx > maxSideWobble) dx = maxSideWobble;
+        if (dx < -maxSideWobble) dx = -maxSideWobble;
+
+        dragX = dx;
+        dragY = dy;
+
+        modalContent.style.transform = `translate(${dx}px, ${dy}px)`;
+      }
+
+      function onEnd() {
+        if (!dragging) return;
+        dragging = false;
+        handleBar.style.cursor = 'grab';
+        modalContent.style.transition = '';
+
+        const closeThreshold = Math.min(modalContent.offsetHeight * 0.22, 130);
+
+        if (dragY > closeThreshold) {
+          modalOverlay.classList.remove('active');
+        }
+
+        modalContent.style.transform = '';
+        dragX = 0;
+        dragY = 0;
+      }
+
+      handleBar.addEventListener('mousedown', onStart);
+      handleBar.addEventListener('touchstart', onStart, { passive: true });
+
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('touchmove', onMove, { passive: true });
+
+      document.addEventListener('mouseup', onEnd);
+      document.addEventListener('touchend', onEnd);
     }
 
     const openModalBtn = document.getElementById('openModalBtn');
@@ -449,6 +678,157 @@
     modalOverlay.addEventListener('click', function(e) {
       if (e.target === modalOverlay) {
         modalOverlay.classList.remove('active');
+      }
+    });
+
+    // 상단 바 드래그로 닫기
+    setupModalDrag(modalOverlay.querySelector('.modal-handle-bar'), modalOverlay);
+
+    // --- 조 구성 데이터 (모둠 편성 엑셀 기준) ---
+    const groupData = {
+      "1조": { leader: "박정안", members: [
+        { num: 8, name: "박정안", leader: true },
+        { num: 22, name: "임지혁" },
+        { num: 4, name: "김주형" },
+        { num: 29, name: "채재율" },
+        { num: 31, name: "한승헌" }
+      ]},
+      "2조": { leader: "이강준", members: [
+        { num: 19, name: "이강준", leader: true },
+        { num: 9, name: "박제연" },
+        { num: 35, name: "염승준" },
+        { num: 36, name: "김동하" },
+        { num: 6, name: "나윤재" }
+      ]},
+      "3조": { leader: "백도윤", members: [
+        { num: 13, name: "백도윤", leader: true },
+        { num: 18, name: "우율우" },
+        { num: 26, name: "정유노" },
+        { num: 15, name: "양승현" },
+        { num: 28, name: "조건희" }
+      ]},
+      "4조": { leader: "김은우", members: [
+        { num: 3, name: "김은우", leader: true },
+        { num: 14, name: "신재원" },
+        { num: 1, name: "강민준" },
+        { num: 11, name: "박태현" },
+        { num: 21, name: "이휘" }
+      ]},
+      "5조": { leader: "정민찬", members: [
+        { num: 25, name: "정민찬", leader: true },
+        { num: 17, name: "오현택" },
+        { num: 30, name: "최준우" },
+        { num: 5, name: "김하율" },
+        { num: 32, name: "황예성" }
+      ]},
+      "6조": { leader: "김시완", members: [
+        { num: 2, name: "김시완", leader: true },
+        { num: 7, name: "박규민" },
+        { num: 23, name: "전도윤" },
+        { num: 16, name: "오유준" }
+      ]},
+      "7조": { leader: "정규환", members: [
+        { num: 24, name: "정규환", leader: true },
+        { num: 12, name: "배성원" },
+        { num: 20, name: "이시형" },
+        { num: 27, name: "정하율" }
+      ]}
+    };
+
+    function findGroupMatches(query) {
+      const q = query.trim();
+      if (!q) return [];
+      const isNumber = /^\d+$/.test(q);
+      const matches = [];
+      Object.keys(groupData).forEach(groupName => {
+        groupData[groupName].members.forEach(m => {
+          const hit = isNumber ? (String(m.num) === q) : (m.name === q);
+          if (hit) {
+            matches.push({ groupName, num: m.num, name: m.name, leaderName: groupData[groupName].leader });
+          }
+        });
+      });
+      return matches;
+    }
+
+    function renderGroupResult(matches) {
+      const resultEl = document.getElementById('groupResult');
+
+      if (matches.length === 0) {
+        resultEl.innerHTML = '<div class="group-result-empty">일치하는 번호 또는 이름이 없습니다.<br>다시 확인해주세요.</div>';
+        resultEl.classList.add('show');
+        return;
+      }
+
+      resultEl.innerHTML = matches.map(m => {
+        const teamMembers = groupData[m.groupName].members
+          .map(mem => mem.leader
+            ? `<span class="member-leader">${mem.num}번 ${mem.name}</span>`
+            : `${mem.num}번 ${mem.name}`)
+          .join(', ');
+
+        return `
+        <div style="${matches.length > 1 ? 'padding-bottom:10px;margin-bottom:10px;border-bottom:1px solid #e5e7eb;' : ''}">
+          <div class="group-result-row">
+            <span class="group-result-label">이름</span>
+            <span class="group-result-value">${m.num}번 ${m.name}</span>
+          </div>
+          <div class="group-result-row">
+            <span class="group-result-label">소속 모둠</span>
+            <span class="group-result-value">${m.groupName}</span>
+          </div>
+          <div class="group-result-row">
+            <span class="group-result-label">모둠장</span>
+            <span class="group-result-value member-leader">${m.leaderName}</span>
+          </div>
+          <div class="group-result-members">
+            <span class="group-result-label">모둠원</span>
+            <span class="group-result-value">${teamMembers}</span>
+          </div>
+        </div>
+      `;
+      }).join('');
+
+      resultEl.classList.add('show');
+    }
+
+    const openGroupModalBtn = document.getElementById('openGroupModalBtn');
+    const groupModalOverlay = document.getElementById('groupModalOverlay');
+    const groupSearchBtn = document.getElementById('groupSearchBtn');
+    const groupSearchInput = document.getElementById('groupSearchInput');
+    const groupResult = document.getElementById('groupResult');
+
+    // 조 구성 확인 모달 열기
+    setupButtonTouchEffect(openGroupModalBtn, () => {
+      setTimeout(() => {
+        groupModalOverlay.classList.add('active');
+        groupResult.classList.remove('show');
+        groupSearchInput.value = '';
+      }, 80);
+    });
+
+    // 조 구성 확인 모달 차단막 클릭 시 닫기
+    groupModalOverlay.addEventListener('click', function(e) {
+      if (e.target === groupModalOverlay) {
+        groupModalOverlay.classList.remove('active');
+      }
+    });
+
+    // 상단 바 드래그로 닫기
+    setupModalDrag(groupModalOverlay.querySelector('.modal-handle-bar'), groupModalOverlay);
+
+    // 조 구성 조회하기 (확인하기 버튼 또는 엔터를 눌렀을 때만 결과 표시)
+    function runGroupSearch() {
+      const matches = findGroupMatches(groupSearchInput.value);
+      renderGroupResult(matches);
+    }
+
+    setupButtonTouchEffect(groupSearchBtn, runGroupSearch);
+
+    groupSearchInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        runGroupSearch();
       }
     });
 
